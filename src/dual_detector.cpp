@@ -24,9 +24,11 @@ double elapsed_ms(Clock::time_point begin) {
 }
 
 Ort::SessionOptions session_options(int intra_op_threads) {
-    if (intra_op_threads < 0) throw std::invalid_argument("intra_op_threads must be nonnegative");
+    if (intra_op_threads < 0)
+        throw std::invalid_argument("intra_op_threads must be nonnegative");
     Ort::SessionOptions options;
-    if (intra_op_threads > 0) options.SetIntraOpNumThreads(intra_op_threads);
+    if (intra_op_threads > 0)
+        options.SetIntraOpNumThreads(intra_op_threads);
     return options;
 }
 
@@ -52,14 +54,14 @@ std::vector<Candidate> suppress(std::vector<Candidate> candidates) {
         const bool duplicate = std::any_of(kept.begin(), kept.end(), [&](const Candidate& prior) {
             return overlap(candidate.box, prior.box) > kNmsIou;
         });
-        if (!duplicate) kept.push_back(candidate);
+        if (!duplicate)
+            kept.push_back(candidate);
     }
     return kept;
 }
 
 std::vector<float> prepare(const cv::Mat& bgr, float& scale) {
-    scale = std::min(static_cast<float>(kSide) / bgr.cols,
-                     static_cast<float>(kSide) / bgr.rows);
+    scale = std::min(static_cast<float>(kSide) / bgr.cols, static_cast<float>(kSide) / bgr.rows);
     cv::Mat resized, rgb;
     cv::resize(bgr, resized, cv::Size(cvRound(bgr.cols * scale), cvRound(bgr.rows * scale)));
     cv::Mat canvas(kSide, kSide, CV_8UC3, cv::Scalar(114, 114, 114));
@@ -85,7 +87,7 @@ std::vector<float> prepare(const cv::Mat& bgr, float& scale) {
 } // namespace
 
 class DualDetector::Model {
-public:
+  public:
     struct Output {
         std::vector<Candidate> candidates;
         double inference_ms = 0.0;
@@ -108,8 +110,8 @@ public:
         const auto shape = output.GetShape();
         if (input.GetElementType() != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ||
             input.GetShape() != std::vector<int64_t>({1, 3, kSide, kSide}) ||
-            output.GetElementType() != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ||
-            shape.size() != 3 || shape[0] != 1 || shape[1] != rows_ || shape[2] <= 0)
+            output.GetElementType() != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT || shape.size() != 3 ||
+            shape[0] != 1 || shape[1] != rows_ || shape[2] <= 0)
             throw std::runtime_error("DualDetector model tensor contract mismatch");
     }
 
@@ -117,20 +119,20 @@ public:
         const std::array<int64_t, 4> input_shape{1, 3, kSide, kSide};
         auto memory = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
         auto tensor = Ort::Value::CreateTensor<float>(memory, input.data(), input.size(),
-                                                     input_shape.data(), input_shape.size());
+                                                      input_shape.data(), input_shape.size());
         const char* input_name = input_name_.c_str();
         const char* output_name = output_name_.c_str();
         const auto inference_started = Clock::now();
-        auto outputs = session_.Run(Ort::RunOptions{nullptr}, &input_name, &tensor, 1,
-                                    &output_name, 1);
+        auto outputs =
+            session_.Run(Ort::RunOptions{nullptr}, &input_name, &tensor, 1, &output_name, 1);
         const double inference_ms = elapsed_ms(inference_started);
         const auto postprocess_started = Clock::now();
         if (outputs.size() != 1 || !outputs[0].IsTensor())
             throw std::runtime_error("DualDetector did not return one tensor");
         const auto info = outputs[0].GetTensorTypeAndShapeInfo();
         const auto shape = info.GetShape();
-        if (info.GetElementType() != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ||
-            shape.size() != 3 || shape[0] != 1 || shape[1] != rows_ || shape[2] <= 0 ||
+        if (info.GetElementType() != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT || shape.size() != 3 ||
+            shape[0] != 1 || shape[1] != rows_ || shape[2] <= 0 ||
             info.GetElementCount() != static_cast<std::size_t>(rows_ * shape[2]))
             throw std::runtime_error("DualDetector runtime output shape mismatch");
         const float* data = outputs[0].GetTensorData<float>();
@@ -141,10 +143,12 @@ public:
             const float a = at(4, i), b = at(5, i);
             const int cls = a >= b ? 0 : 1;
             const float score = std::max(a, b);
-            if (!std::isfinite(score) || score < kConfidence) continue;
+            if (!std::isfinite(score) || score < kConfidence)
+                continue;
             const float cx = at(0, i), cy = at(1, i), w = at(2, i), h = at(3, i);
             if (!std::isfinite(cx) || !std::isfinite(cy) || !std::isfinite(w) ||
-                !std::isfinite(h) || w <= 0 || h <= 0) continue;
+                !std::isfinite(h) || w <= 0 || h <= 0)
+                continue;
             Candidate candidate;
             candidate.box = {(cx - w / 2) / scale, (cy - h / 2) / scale, w / scale, h / scale};
             candidate.score = score;
@@ -155,18 +159,19 @@ public:
                     const float x = at(6 + 3 * k, i), y = at(7 + 3 * k, i);
                     candidate.visibility[k] = at(8 + 3 * k, i);
                     if (!std::isfinite(x) || !std::isfinite(y) ||
-                        !std::isfinite(candidate.visibility[k])) valid_points = false;
+                        !std::isfinite(candidate.visibility[k]))
+                        valid_points = false;
                     candidate.points[k] = {x / scale, y / scale};
                 }
-                if (!valid_points) continue;
+                if (!valid_points)
+                    continue;
             }
             candidates.push_back(candidate);
         }
-        return {suppress(std::move(candidates)), inference_ms,
-                elapsed_ms(postprocess_started)};
+        return {suppress(std::move(candidates)), inference_ms, elapsed_ms(postprocess_started)};
     }
 
-private:
+  private:
     Ort::Env env_;
     Ort::Session session_;
     int rows_;
@@ -176,7 +181,8 @@ private:
 DualDetector::DualDetector(const std::string& color_pose_model, const std::string& pattern_model,
                            int intra_op_threads)
     : pose_(std::make_unique<Model>(color_pose_model, 18, intra_op_threads)),
-      pattern_(std::make_unique<Model>(pattern_model, 6, intra_op_threads)) {}
+      pattern_(std::make_unique<Model>(pattern_model, 6, intra_op_threads)) {
+}
 
 DualDetector::~DualDetector() = default;
 
@@ -191,9 +197,7 @@ DualDetector::Frame DualDetector::detect(const cv::Mat& bgr_image) {
     frame.timing.preprocess_ms = elapsed_ms(started);
     // 两个独立 Session 可并行推理。input 在两个任务完成前保持有效；
     // future.get() 还会把模型异常带回调用线程，避免静默丢帧。
-    auto pattern_task = std::async(std::launch::async, [&] {
-        return pattern_->run(input, scale);
-    });
+    auto pattern_task = std::async(std::launch::async, [&] { return pattern_->run(input, scale); });
     const auto pose_output = pose_->run(input, scale);
     const auto pattern_output = pattern_task.get();
     const auto& poses = pose_output.candidates;
@@ -204,18 +208,22 @@ DualDetector::Frame DualDetector::detect(const cv::Mat& bgr_image) {
     frame.timing.pattern_postprocess_ms = pattern_output.postprocess_ms;
     const auto match_started = Clock::now();
     std::vector<cv::Rect2f> pose_boxes, pattern_boxes;
-    for (const auto& pose : poses) pose_boxes.push_back(pose.box);
-    for (const auto& pattern : patterns) pattern_boxes.push_back(pattern.box);
+    for (const auto& pose : poses)
+        pose_boxes.push_back(pose.box);
+    for (const auto& pattern : patterns)
+        pattern_boxes.push_back(pattern.box);
     frame.pose_candidates = poses.size();
     frame.pattern_candidates = patterns.size();
     frame.matches = match_pattern_centers(pose_boxes, pattern_boxes);
     for (std::size_t i = 0; i < poses.size(); ++i) {
         const auto match = frame.matches.armor_to_pattern[i];
-        if (match.state != MatchState::Matched) continue;
+        if (match.state != MatchState::Matched)
+            continue;
         const auto& pose = poses[i];
         // 可见性低的角点不能偷偷送入 PnP；侧板/出画面后续需单独策略。
         if (std::any_of(pose.visibility.begin(), pose.visibility.end(),
-                        [](float value) { return value < 0.5F; })) continue;
+                        [](float value) { return value < 0.5F; }))
+            continue;
         ArmorDetection armor{};
         armor.corners.assign(pose.points.begin(), pose.points.end());
         armor.color = pose.cls == 0 ? ArmorColor::Blue : ArmorColor::Red;

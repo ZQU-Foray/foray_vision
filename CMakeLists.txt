@@ -26,7 +26,6 @@ endif()
 
 add_library(${PROJECT_NAME} SHARED
     src/pnp_solver.cpp
-    src/detector.cpp
     src/armor_pipeline.cpp
     src/pattern_match.cpp
     src/dual_detector.cpp
@@ -60,9 +59,6 @@ if(BUILD_TESTING)
     find_package(ament_cmake_gtest REQUIRED)
     ament_add_gtest(test_pnp test/test_pnp.cpp)
     target_link_libraries(test_pnp ${PROJECT_NAME})
-
-    ament_add_gtest(test_detector test/test_detector.cpp)
-    target_link_libraries(test_detector ${PROJECT_NAME})
 
     ament_add_gtest(test_armor_pipeline test/test_armor_pipeline.cpp)
     target_link_libraries(test_armor_pipeline ${PROJECT_NAME})

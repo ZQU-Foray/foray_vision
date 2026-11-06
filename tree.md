@@ -12,19 +12,19 @@
 ├── CODEOWNERS               Review 自动分派
 ├── .foray-layer             所属层与依赖边界（CI 校验）
 ├── .gitignore
-├── CMakeLists.txt          PnP、Detector 与调用链的构建、安装及单元测试
+├── CMakeLists.txt          PnP、双模型与调用链的构建、安装及单元测试
 ├── package.xml             ROS 2 包声明
-├── include/foray_vision/  PnP、Detector、调用链及图案框配对接口
-├── src/                   PnP、Detector、调用链及图案框配对实现
+├── include/foray_vision/  检测结果类型、PnP、双模型、调用链及图案框配对接口
+├── src/                   PnP、双模型、调用链及图案框配对实现
 ├── test/                  对应的离线单元测试
 └── .github/
     └── workflows/
         └── ci.yml           复制自组织 CI 模板
 ```
 
-> 当前旧 Detector 与独立双模型入口均已在本地工作区搭建；双模型已完成真实 ONNX 离线推理，并共享预处理、并行执行两个独立 Session。模拟器画面验收、HSV 仲裁、相机标定与实机验证仍待完成。
+> 当前正式图像入口连接双模型与四角 PnP；旧单模型源码和测试已移除。双模型已完成真实 ONNX 离线推理，并共享预处理、并行执行两个独立 Session。HSV 仲裁、相机标定与实机验证仍待完成。
 
-> `sp_lightbar_geometry` 将模型外轮廓四角转换为 SP PnP 灯条端点；尺寸由调用方注入，模拟器测得的缩放值不在库内硬编码。
+> `sp_lightbar_geometry` 是历史仿真适配工具；正式相机链路直接用物理外轮廓四角做 PnP，不转换为灯条端点。
 
 > 双模型接口附带可选 CPU ORT 线程配置和单帧阶段计时；`test/test_dual_detector.cpp` 可用本地 ONNX/图片夹具做离线分段基准，`test/test_pnp.cpp` 可选重复解算计时。
 

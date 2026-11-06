@@ -18,9 +18,9 @@ struct SpLightbarGeometry {
     double lightbar_length_m = 0.056;
 };
 
-std::optional<std::array<cv::Point2f, 4>> outer_to_sp_lightbars(
-    const std::array<cv::Point2f, 4>& outer_corners,
-    const SpLightbarGeometry& geometry);
+std::optional<std::array<cv::Point2f, 4>>
+outer_to_sp_lightbars(const std::array<cv::Point2f, 4>& outer_corners,
+                      const SpLightbarGeometry& geometry);
 
 } // namespace foray_vision
 

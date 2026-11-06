@@ -23,9 +23,8 @@ struct PatternMatchResult {
     std::vector<PatternMatch> pattern_to_armor;
 };
 
-PatternMatchResult match_pattern_centers(
-    const std::vector<cv::Rect2f>& armor_boxes,
-    const std::vector<cv::Rect2f>& pattern_boxes);
+PatternMatchResult match_pattern_centers(const std::vector<cv::Rect2f>& armor_boxes,
+                                         const std::vector<cv::Rect2f>& pattern_boxes);
 
 } // namespace foray_vision
 

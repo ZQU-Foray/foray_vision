@@ -12,14 +12,11 @@ namespace {
 constexpr ArmorSize kArmorSize{0.3F, 0.2F};
 //  模拟相机内参
 cv::Mat camera_matrix() {
-    return (cv::Mat_<double>(3, 3) <<
-        800.0, 0.0, 640.0,
-        0.0, 800.0, 512.0,
-        0.0, 0.0, 1.0);
+    return (cv::Mat_<double>(3, 3) << 800.0, 0.0, 640.0, 0.0, 800.0, 512.0, 0.0, 0.0, 1.0);
 }
-// 造数据 
-ArmorDetection make_detection(int id, const cv::Vec3d& translation,
-                              const cv::Mat& intrinsic, const cv::Mat& distortion) {
+// 造数据
+ArmorDetection make_detection(int id, const cv::Vec3d& translation, const cv::Mat& intrinsic,
+                              const cv::Mat& distortion) {
     const float half_width = kArmorSize.width / 2.0F;
     const float half_height = kArmorSize.height / 2.0F;
     const std::vector<cv::Point3f> object_points{
@@ -35,8 +32,8 @@ ArmorDetection make_detection(int id, const cv::Vec3d& translation,
     detection.color = ArmorColor::Red;
     detection.confidence = 0.9;
     // 重投影点 检测目标角点 旋转矩阵 平移向量 相机内参 畸变系数 图片点
-    cv::projectPoints(object_points, cv::Vec3d{0.0, 0.0, 0.0}, translation,
-                      intrinsic, distortion, detection.corners);
+    cv::projectPoints(object_points, cv::Vec3d{0.0, 0.0, 0.0}, translation, intrinsic, distortion,
+                      detection.corners);
     return detection;
 }
 
@@ -58,16 +55,13 @@ TEST(ArmorPipelineTest, KeepsValidArmorsAroundInvalidDetection) {
     const Solver solver(intrinsic, distortion,
                         Camera2gimbal{cv::Matx33d::eye(), cv::Vec3d{0.0, 0.0, 0.0}});
 
-    const ArmorDetection first = make_detection(0, cv::Vec3d{0.0, 0.0, 2.0},
-                                                 intrinsic, distortion);
-    ArmorDetection invalid = make_detection(-1, cv::Vec3d{0.2, 0.0, 2.0},
-                                             intrinsic, distortion);
+    const ArmorDetection first = make_detection(0, cv::Vec3d{0.0, 0.0, 2.0}, intrinsic, distortion);
+    ArmorDetection invalid = make_detection(-1, cv::Vec3d{0.2, 0.0, 2.0}, intrinsic, distortion);
     invalid.corners.pop_back();
-    const ArmorDetection last = make_detection(1, cv::Vec3d{0.4, 0.0, 2.5},
-                                                intrinsic, distortion);
+    const ArmorDetection last = make_detection(1, cv::Vec3d{0.4, 0.0, 2.5}, intrinsic, distortion);
 
-    const VisionFrameResult result = process_armor_solver({first, invalid, last},
-                                                           solver, kArmorSize);
+    const VisionFrameResult result =
+        process_armor_solver({first, invalid, last}, solver, kArmorSize);
     ASSERT_EQ(result.armors.size(), 2U);
     ASSERT_EQ(result.detections.size(), 3U);
     ASSERT_EQ(result.pnp_by_detection.size(), 3U);
